@@ -1,2 +1,2 @@
 # ubiquitous-train
-LINNTAS KLASTER
+LINTAS KLASTER
