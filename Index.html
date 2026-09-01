@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPTD Puskesmas Lanjut - Integrasi Layanan Primer</title>
+    <!-- Library SheetJS untuk membaca Excel tanpa server -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #047857;
+            --primary-hover: #065f46;
+            --accent: #0ea5e9;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* 1 Halaman Penuh Tanpa Scroll dengan Background */
+        body {
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-image: url('WhatsApp Image 2026-08-23 at 19.22.56.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        /* Header Transparan Kaca */
+        header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .navbar {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            width: 42px;
+            height: 42px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            background: white;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        /* Dropdown Utama */
+        .dropdown { position: relative; }
+        
+        .drop-btn {
+            background-color: var(--primary); 
+            color: white; 
+            border: none; 
+            font-size: 0.95rem; 
+            font-weight: 600;
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            padding: 8px 16px; 
+            border-radius: 8px;
+            transition: background 0.2s; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .drop-btn:hover { background-color: var(--primary-hover); }
+
+        .btn-logo-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: cover;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .dropdown-content {
+            display: none; position: absolute; top: 100%; right: 0; background: var(--glass-bg);
+            backdrop-filter: blur(15px); min-width: 320px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); 
+            border-radius: 8px; border: 1px solid var(--glass-border); list-style: none; padding: 8px 0; 
+            margin-top: 15px; z-index: 1100;
+        }
+
+        .dropdown-content li { position: relative; }
+
+        .dropdown-content li > a {
+            padding: 12px 20px; display: flex; justify-content: space-between; color: var(--text-main); 
+            font-size: 0.9rem; font-weight: 600; text-decoration: none; transition: background 0.2s, color 0.2s;
+            cursor: pointer;
+        }
+
+        .dropdown-content li:hover > a { background-color: rgba(4, 120, 87, 0.15); color: var(--primary); }
+
+        .sub-dropdown {
+            display: none; position: absolute; top: 0; right: 100%; background: var(--glass-bg);
+            backdrop-filter: blur(15px); min-width: 220px; box-shadow: -5px 10px 25px rgba(0, 0, 0, 0.2);
+            border-radius: 8px; border: 1px solid var(--glass-border); list-style: none; padding: 8px 0;
+            margin-right: 5px;
+        }
+
+        .dropdown-content li:hover > .sub-dropdown { display: block; }
+
+        .sub-dropdown li a {
+            padding: 10px 20px; font-weight: normal; font-size: 0.85rem; display: block;
+        }
+        .sub-dropdown li a:hover { background-color: rgba(4, 120, 87, 0.15); color: var(--primary); font-weight: 600;}
+        .dropdown.active .dropdown-content { display: block; }
+
+        /* Container Tengah */
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Kotak Kerja Utama (Transparan & Dinamis) */
+        .workspace-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 900px;
+            height: 82vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.4s ease-out;
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header {
+            padding: 15px 25px;
+            border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+            background: rgba(255, 255, 255, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .card-header h2 { font-size: 1.25rem; color: var(--primary); margin-bottom: 2px; }
+        .card-header p { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+        .btn-close-card {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .btn-close-card:hover { background: #dc2626; }
+
+        .card-body {
+            padding: 20px 25px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        /* Area Upload */
+        .upload-area {
+            border: 2px dashed var(--accent);
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .upload-area:hover { background-color: rgba(14, 165, 233, 0.1); border-color: var(--primary); }
+
+        .btn-upload { 
+            background-color: var(--primary); 
+            color: white; 
+            padding: 6px 18px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            font-size: 0.85rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-upload:hover { background-color: var(--primary-hover); }
+        .file-input-hidden { display: none; }
+
+        .file-list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            border-top: 1px solid rgba(203, 213, 225, 0.6);
+            padding-top: 10px;
+        }
+
+        .file-list { list-style: none; }
+        
+        .file-item {
+            background: rgba(255, 255, 255, 0.9); 
+            padding: 10px 15px; 
+            border-radius: 8px; 
+            margin-bottom: 8px;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border: 1px solid #cbd5e1; 
+            border-left: 5px solid var(--primary);
+        }
+
+        .file-item a { color: var(--text-main); text-decoration: none; font-weight: 600; font-size: 0.85rem;}
+        .file-item a:hover { color: var(--primary); text-decoration: underline; }
+        
+        .file-actions { display: flex; gap: 8px; align-items: center; }
+
+        .btn-preview { 
+            background: var(--accent); color: white; border: none; padding: 5px 10px; 
+            border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.75rem;
+        }
+        .btn-preview:hover { background: #0284c7; }
+
+        .btn-delete-cross { 
+            background: #ef4444; color: white; border: none; width: 24px; height: 24px;
+            border-radius: 50%; font-weight: bold; cursor: pointer; font-size: 0.8rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-delete-cross:hover { background: #dc2626; }
+
+        /* Tampilan Kalender Penuh 1 Tahun (Grid 4x3) */
+        .full-year-calendar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            overflow-y: auto;
+            max-height: 48vh;
+            padding-right: 5px;
+            margin-bottom: 15px;
+        }
+
+        .mini-month-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .mini-month-card h4 {
+            font-size: 0.85rem;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 6px;
+            font-weight: 700;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            font-size: 0.65rem;
+            text-align: center;
+            gap: 2px;
+        }
+
+        .mini-grid .day-name {
+            font-weight: bold;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .mini-grid .date-cell {
+            padding: 3px 0;
+            border-radius: 50%;
+        }
+
+        .mini-grid .date-cell.meeting-date {
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 5px rgba(4, 120, 87, 0.6);
+        }
+
+        /* Container Slideshow / Animasi Otomatis Dokumentasi Rapat */
+        #slideshowDisplayArea {
+            display: none;
+            width: 100%;
+            height: 38vh;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: rgba(15, 23, 42, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slide-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            position: absolute;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .slide-img.active {
+            opacity: 1;
+        }
+
+        /* Modal Box Pratinjau Fullscreen */
+        #previewModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(15, 23, 42, 0.9); z-index: 2000; justify-content: center; align-items: center; padding: 15px; 
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content-full {
+            background: white; width: 100%; height: 100%; border-radius: 10px;
+            display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-header-full { 
+            padding: 12px 25px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; 
+        }
+        .modal-header-full h3 { font-size: 1.1rem; font-weight: 600; }
+
+        .btn-close-back { 
+            background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; 
+            padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .btn-close-back:hover { background: #ef4444; border-color: #ef4444; }
+
+        .modal-body-full { flex-grow: 1; background: #f1f5f9; overflow: auto; position: relative; }
+        .modal-body-full iframe, .modal-body-full embed { width: 100%; height: 100%; border: none; display: block; }
+        
+        .excel-table-container { padding: 30px; background: white; min-height: 100%; }
+        .excel-table-container table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+        .excel-table-container th, .excel-table-container td { border: 1px solid #cbd5e1; padding: 10px 14px; text-align: left; }
+        .excel-table-container th { background-color: #f8fafc; color: var(--primary); position: sticky; top: 0; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="navbar">
+            <a href="#" class="logo-container">
+                <img src="WhatsApp Image 2026-08-23 at 21.43.36 (1).jpeg" alt="Logo Puskesmas" class="logo-img">
+                <span class="logo-text">UPTD PUSKESMAS LANJUT</span>
+            </a>
+
+            <ul class="nav-links">
+                <li class="dropdown" id="mainDropdown">
+                    <button class="drop-btn" onclick="toggleDropdown(event)">
+                        <img src="WhatsApp Image 2026-08-23 at 21.43.36.jpeg" alt="Logo Klaster" class="btn-logo-icon">
+                        LINTAS KLASTER
+                    </button>
+                    
+                    <ul class="dropdown-content">
+                        <!-- Menu 1: Laporan Lokmin -->
+                        <li>
+                            <a href="#">Laporan Lokmin Bulanan ▸</a>
+                            <ul class="sub-dropdown">
+                                <li><a onclick="selectMenu('lokmin', 0, 'Laporan Lokmin Bulanan', 'Januari')">Januari</a></li>
+                                <li><a onclick="selectMenu('lokmin', 1, 'Laporan Lokmin Bulanan', 'Februari')">Februari</a></li>
+                                <li><a onclick="selectMenu('lokmin', 2, 'Laporan Lokmin Bulanan', 'Maret')">Maret</a></li>
+                                <li><a onclick="selectMenu('lokmin', 3, 'Laporan Lokmin Bulanan', 'April')">April</a></li>
+                                <li><a onclick="selectMenu('lokmin', 4, 'Laporan Lokmin Bulanan', 'Mei')">Mei</a></li>
+                                <li><a onclick="selectMenu('lokmin', 5, 'Laporan Lokmin Bulanan', 'Juni')">Juni</a></li>
+                                <li><a onclick="selectMenu('lokmin', 6, 'Laporan Lokmin Bulanan', 'Juli')">Juli</a></li>
+                                <li><a onclick="selectMenu('lokmin', 7, 'Laporan Lokmin Bulanan', 'Agustus')">Agustus</a></li>
+                                <li><a onclick="selectMenu('lokmin', 8, 'Laporan Lokmin Bulanan', 'September')">September</a></li>
+                                <li><a onclick="selectMenu('lokmin', 9, 'Laporan Lokmin Bulanan', 'Oktober')">Oktober</a></li>
+                                <li><a onclick="selectMenu('lokmin', 10, 'Laporan Lokmin Bulanan', 'November')">November</a></li>
+                                <li><a onclick="selectMenu('lokmin', 11, 'Laporan Lokmin Bulanan', 'Desember')">Desember</a></li>
+                            </ul>
+                        </li>
+                        
+                        <!-- Menu 2: Dokumentasi Rapat -->
+                        <li>
+                            <a href="#">Dokumentasi Rapat Klaster ▸</a>
+                            <ul class="sub-dropdown">
+                                <li><a onclick="selectMenu('dokrapat', 0, 'Dokumentasi Rapat Bulanan Klaster', 'Januari')">Januari</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 1, 'Dokumentasi Rapat Bulanan Klaster', 'Februari')">Februari</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 2, 'Dokumentasi Rapat Bulanan Klaster', 'Maret')">Maret</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 3, 'Dokumentasi Rapat Bulanan Klaster', 'April')">April</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 4, 'Dokumentasi Rapat Bulanan Klaster', 'Mei')">Mei</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 5, 'Dokumentasi Rapat Bulanan Klaster', 'Juni')">Juni</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 6, 'Dokumentasi Rapat Bulanan Klaster', 'Juli')">Juli</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 7, 'Dokumentasi Rapat Bulanan Klaster', 'Agustus')">Agustus</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 8, 'Dokumentasi Rapat Bulanan Klaster', 'September')">September</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 9, 'Dokumentasi Rapat Bulanan Klaster', 'Oktober')">Oktober</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 10, 'Dokumentasi Rapat Bulanan Klaster', 'November')">November</a></li>
+                                <li><a onclick="selectMenu('dokrapat', 11, 'Dokumentasi Rapat Bulanan Klaster', 'Desember')">Desember</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Menu 3: Jadwal Rapat -->
+                        <li>
+                            <a onclick="selectMenu('jadwal', 'all', 'Jadwal Kegiatan & Rapat Klaster', 'Kalender Penuh 1 Tahun (2026)')">Jadwal Rapat Klaster ▸</a>
+                            <ul class="sub-dropdown">
+                                <li><a onclick="selectMenu('jadwal', 'all', 'Jadwal Kegiatan & Rapat Klaster', 'Kalender Penuh 1 Tahun (2026)')">Lihat Kalender 1 Tahun</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Kotak Kerja Utama -->
+        <div id="activeUI" class="workspace-card" style="display: none;">
+            <div class="card-header">
+                <div>
+                    <h2 id="activeTitle">Judul Menu</h2>
+                    <p id="activeSubtitle">Periode</p>
+                </div>
+                <button class="btn-close-card" onclick="closeWorkspace()">Tutup ✕</button>
+            </div>
+            
+            <div class="card-body">
+                <!-- Kalender 1 Tahun -->
+                <div id="calendarDisplayArea" style="display: none;">
+                    <div class="full-year-calendar" id="fullYearCalendarGrid"></div>
+                </div>
+
+                <!-- Slideshow Dokumentasi Rapat -->
+                <div id="slideshowDisplayArea">
+                    <div class="slideshow-container" id="slideshowContainerImages"></div>
+                </div>
+
+                <!-- Area Pilih Berkas -->
+                <div class="upload-area" id="uploadAreaContainer" onclick="triggerUpload()">
+                    <button class="btn-upload" type="button">Pilih Berkas</button>
+                    <input type="file" id="dynamicFileInput" class="file-input-hidden" multiple onchange="handleFiles(this)">
+                </div>
+                
+                <div class="file-list-container" id="fileListContainerArea">
+                    <ul id="dynamicFileList" class="file-list"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Box Pratinjau Fullscreen -->
+    <div id="previewModal">
+        <div class="modal-content-full">
+            <div class="modal-header-full">
+                <h3 id="modalTitle">Pratinjau Dokumen</h3>
+                <button class="btn-close-back" onclick="closeModal()">← Kembali / Tutup</button>
+            </div>
+            <div class="modal-body-full" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PROGRAM -->
+    <script>
+        let currentMenuId = ""; 
+        let slideshowInterval = null;
+
+        const meetingDates2026 = {
+            0: [21], 1: [21], 2: [10], 3: [22], 4: [23], 5: [23], 
+            6: [22], 7: [22], 8: [19], 9: [22], 10: [21], 11: [16]  
+        };
+
+        const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+        // Database Lokal (IndexedDB)
+        let db;
+        const request = indexedDB.open("PuskesmasILP_MasterDB_V4", 1);
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains("docs")) {
+                db.createObjectStore("docs", { keyPath: "id", autoIncrement: true });
+            }
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+        };
+
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            document.getElementById('mainDropdown').classList.toggle('active');
+        }
+
+        window.addEventListener('click', function() {
+            document.getElementById('mainDropdown').classList.remove('active');
+        });
+
+        function selectMenu(categoryCode, monthIdentifier, mainTitle, subTitle) {
+            currentMenuId = categoryCode + "-" + monthIdentifier;
+
+            document.getElementById('mainDropdown').classList.remove('active');
+            document.getElementById('activeUI').style.display = 'flex';
+
+            document.getElementById('activeTitle').innerText = mainTitle;
+            document.getElementById('activeSubtitle').innerText = "Periode: " + subTitle;
+
+            const calArea = document.getElementById('calendarDisplayArea');
+            const uploadArea = document.getElementById('uploadAreaContainer');
+            const slideshowArea = document.getElementById('slideshowDisplayArea');
+            const fileListArea = document.getElementById('fileListContainerArea');
+
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+            }
+
+            if (categoryCode === 'jadwal') {
+                calArea.style.display = 'block';
+                renderFullYearCalendar();
+                uploadArea.style.display = 'none';
+                slideshowArea.style.display = 'none';
+                fileListArea.style.display = 'block';
+            } else if (categoryCode === 'dokrapat') {
+                calArea.style.display = 'none';
+                calArea.innerHTML = '';
+                uploadArea.style.display = 'block';
+                slideshowArea.style.display = 'flex';
+                fileListArea.style.display = 'none';
+            } else {
+                calArea.style.display = 'none';
+                calArea.innerHTML = '';
+                uploadArea.style.display = 'block';
+                slideshowArea.style.display = 'none';
+                fileListArea.style.display = 'block';
+            }
+
+            document.getElementById('dynamicFileList').innerHTML = '';
+            document.getElementById('slideshowContainerImages').innerHTML = '';
+            loadFilesForCurrentMenu(categoryCode);
+        }
+
+        function renderFullYearCalendar() {
+            const gridContainer = document.getElementById('fullYearCalendarGrid');
+            gridContainer.innerHTML = '';
+
+            const year = 2026;
+            for (let m = 0; m < 12; m++) {
+                const monthCard = document.createElement('div');
+                monthCard.className = 'mini-month-card';
+
+                let html = `<h4>${monthNames[m]} ${year}</h4><div class="mini-grid">`;
+                
+                const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                days.forEach(d => { html += `<div class="day-name">${d}</div>`; });
+
+                const firstDayIndex = new Date(year, m, 1).getDay();
+                const totalDays = new Date(year, m + 1, 0).getDate();
+                const meetingDays = meetingDates2026[m] || [];
+
+                for (let i = 0; i < firstDayIndex; i++) {
+                    html += `<div></div>`;
+                }
+
+                for (let d = 1; d <= totalDays; d++) {
+                    const isMeeting = meetingDays.includes(d);
+                    const cellClass = isMeeting ? 'date-cell meeting-date' : 'date-cell';
+                    html += `<div class="${cellClass}">${d}</div>`;
+                }
+
+                html += `</div>`;
+                monthCard.innerHTML = html;
+                gridContainer.appendChild(monthCard);
+            }
+        }
+
+        function closeWorkspace() {
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+            }
+            document.getElementById('activeUI').style.display = 'none';
+            currentMenuId = "";
+        }
+
+        function triggerUpload() { 
+            document.getElementById('dynamicFileInput').click(); 
+        }
+
+        function handleFiles(input) {
+            const files = input.files;
+            if (files.length === 0 || currentMenuId === "") return;
+
+            if (!db) {
+                alert("Database sedang dimuat, silakan coba unggah beberapa saat lagi.");
+                return;
+            }
+
+            let categoryCode = currentMenuId.split("-")[0];
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const transaction = db.transaction(["docs"], "readwrite");
+                const store = transaction.objectStore("docs");
+                
+                const fileData = {
+                    menuId: currentMenuId,
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileSize: file.size,
+                    fileContent: file 
+                };
+
+                const addRequest = store.add(fileData);
+                addRequest.onsuccess = function(e) {
+                    fileData.id = e.target.result;
+                    if (categoryCode === 'dokrapat') {
+                        loadFilesForCurrentMenu(categoryCode);
+                    } else {
+                        renderFileItem(fileData); 
+                    }
+                };
+            }
+            input.value = '';
+        }
+
+        function loadFilesForCurrentMenu(categoryCode) {
+            if (!db) {
+                setTimeout(() => loadFilesForCurrentMenu(categoryCode), 100);
+                return;
+            }
+
+            const transaction = db.transaction(["docs"], "readonly");
+            const store = transaction.objectStore("docs");
+            const request = store.getAll();
+
+            request.onsuccess = function(e) {
+                const allDocs = e.target.result;
+                let matchedDocs = allDocs.filter(data => data.menuId === currentMenuId);
+
+                if (categoryCode === 'dokrapat') {
+                    let imageDocs = matchedDocs.filter(data => data.fileType.includes('image/') || data.fileName.match(/\.(jpg|jpeg|png|gif)$/i));
+                    renderSlideshowImages(imageDocs);
+                } else {
+                    matchedDocs.forEach(data => {
+                        renderFileItem(data);
+                    });
+                }
+            };
+        }
+
+        function renderFileItem(data) {
+            const listContainer = document.getElementById('dynamicFileList');
+            const li = document.createElement('li');
+            li.className = 'file-item';
+            
+            const fileURL = URL.createObjectURL(data.fileContent);
+            let fileSize = (data.fileSize / 1024).toFixed(1) + ' KB';
+            if (data.fileSize > 1024 * 1024) fileSize = (data.fileSize / (1024 * 1024)).toFixed(1) + ' MB';
+
+            li.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; max-width:60%;">
+                    <span>📄</span>
+                    <a href="${fileURL}" target="_blank" title="Unduh File" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.fileName}</a>
+                </div>
+                <div class="file-actions">
+                    <small style="color:var(--text-muted);">(${fileSize})</small>
+                    <button class="btn-preview" onclick="openPreview('${fileURL}', '${data.fileName}', '${data.fileType}')">Tampilkan</button>
+                    <button class="btn-delete-cross" onclick="deleteFile(${data.id}, this.parentElement.parentElement)" title="Hapus File">✕</button>
+                </div>
+            `;
+            listContainer.appendChild(li);
+        }
+
+        function renderSlideshowImages(imageDocs) {
+            const container = document.getElementById('slideshowContainerImages');
+            container.innerHTML = '';
+
+            if (imageDocs.length === 0) {
+                container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.95rem; font-weight: 600;">Belum ada dokumentasi gambar untuk bulan ini. Silakan klik tombol "Pilih Berkas" di bawah.</div>`;
+                return;
+            }
+
+            imageDocs.forEach((doc, index) => {
+                const fileURL = URL.createObjectURL(doc.fileContent);
+                const img = document.createElement('img');
+                img.src = fileURL;
+                img.className = 'slide-img' + (index === 0 ? ' active' : '');
+                container.appendChild(img);
+            });
+
+            if (imageDocs.length > 1) {
+                let currentIndex = 0;
+                const slides = container.querySelectorAll('.slide-img');
+
+                if (slideshowInterval) clearInterval(slideshowInterval);
+
+                slideshowInterval = setInterval(() => {
+                    slides[currentIndex].classList.remove('active');
+                    currentIndex = (currentIndex + 1) % slides.length;
+                    slides[currentIndex].classList.add('active');
+                }, 3500);
+            }
+        }
+
+        function deleteFile(id, listElement) {
+            if(!confirm("Anda yakin ingin menghapus dokumen ini?")) return;
+
+            const transaction = db.transaction(["docs"], "readwrite");
+            const store = transaction.objectStore("docs");
+            const request = store.delete(id);
+
+            request.onsuccess = function() {
+                listElement.remove(); 
+            };
+        }
+
+        function openPreview(url, name, type) {
+            const modal = document.getElementById('previewModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.innerText = "Pratinjau Dokumen";
+            modalBody.innerHTML = '<div style="padding:60px; text-align:center; font-weight:bold; color:var(--primary); font-size:1.2rem;">Memuat pratinjau dokumen...</div>';
+            modal.style.display = 'flex';
+
+            setTimeout(() => {
+                if (type.includes('pdf') || name.toLowerCase().endsWith('.pdf')) {
+                    modalBody.innerHTML = `<embed src="${url}" type="application/pdf">`;
+                } else if (name.match(/\.(xlsx|xls|csv)$/i)) {
+                    modalBody.innerHTML = '<div style="padding:40px; text-align:center;">Membaca struktur tabel Excel...</div>';
+                    fetch(url).then(res => res.arrayBuffer()).then(ab => {
+                            const workbook = XLSX.read(ab, { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            const htmlTable = XLSX.utils.sheet_to_html(worksheet, { id: 'excel-table' });
+                            modalBody.innerHTML = `
+                                <div class="excel-table-container">
+                                    <h4 style="margin-bottom:15px; color:var(--primary);">Lembar: ${firstSheetName}</h4>
+                                    ${htmlTable}
+                                </div>`;
+                        }).catch(err => {
+                            modalBody.innerHTML = `<div style="padding:40px; text-align:center; color:red;">Gagal memuat Excel.</div>`;
+                        });
+                } else if (type.includes('image/') || name.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                    modalBody.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; padding:20px;"><img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px;"></div>`;
+                } else {
+                    modalBody.innerHTML = `
+                        <div style="padding: 80px; text-align: center;">
+                            <span style="font-size:4rem; margin-bottom:20px; display:block;">📂</span>
+                            <h2 style="margin-bottom: 15px; color:var(--primary);">Pratinjau Penuh Tidak Tersedia</h2>
+                            <p style="margin-bottom: 25px;">Format file ini tidak dapat dibuka langsung di dalam web.<br>Silakan unduh untuk membukanya secara manual.</p>
+                            <a href="${url}" download="${name}" class="btn-upload" style="text-decoration: none; display: inline-block;">Unduh File Sekarang</a>
+                        </div>
+                    `;
+                }
+            }, 300);
+        }
+
+        function closeModal() {
+            document.getElementById('previewModal').style.display = 'none';
+            document.getElementById('modalBody').innerHTML = ''; 
+        }
+    </script>
+</body>
+</html>
